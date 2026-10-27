@@ -1,0 +1,538 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SnapLink — Shorten, Share & Track URLs{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-badge">
+            <span class="badge-dot"></span>
+            <span>Fast &amp; Free URL Shortener</span>
+        </div>
+        <h1 class="hero-title">
+            Shorten Links,<br>
+            <span class="gradient-text">Amplify Reach</span>
+        </h1>
+        <p class="hero-subtitle">
+            Transform long URLs into powerful short links. Track clicks, generate QR codes,
+            and analyze your audience in real‑time.
+        </p>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-item">
+                <span class="stat-value" id="stat-total-urls">{{ total_urls }}</span>
+                <span class="stat-label">Links Created</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-value" id="stat-total-clicks">{{ total_clicks }}</span>
+                <span class="stat-label">Total Clicks</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-value" id="stat-active-urls">{{ active_urls }}</span>
+                <span class="stat-label">Active Links</span>
+            </div>
+        </div>
+
+        <!-- Shortener Form Card -->
+        <div class="shortener-card" id="shortener-card">
+            <div class="card-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+                <h2>Create Short Link</h2>
+            </div>
+
+            <form id="shorten-form" method="POST" action="{% url 'shorten_url' %}" novalidate>
+                {% csrf_token %}
+
+                <!-- URL Input -->
+                <div class="form-group">
+                    <label class="form-label" for="original-url-input">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                        Paste your long URL
+                    </label>
+                    {{ form.original_url }}
+                    {% if form.original_url.errors %}
+                    <span class="field-error">{{ form.original_url.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Advanced Options Toggle -->
+                <button type="button" class="advanced-toggle" id="advanced-toggle" onclick="toggleAdvanced()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="toggle-arrow">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                    Advanced Options
+                </button>
+
+                <!-- Advanced Options Panel -->
+                <div class="advanced-panel" id="advanced-panel">
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label class="form-label" for="custom-alias-input">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                </svg>
+                                Custom Alias
+                            </label>
+                            {{ form.custom_alias }}
+                            {% if form.custom_alias.errors %}
+                            <span class="field-error">{{ form.custom_alias.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="form-group half">
+                            <label class="form-label" for="title-input">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="4 7 4 4 20 4 20 7"/>
+                                    <line x1="9" y1="20" x2="15" y2="20"/>
+                                    <line x1="12" y1="4" x2="12" y2="20"/>
+                                </svg>
+                                Link Title
+                            </label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                            <span class="field-error">{{ form.title.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="expires-at-input">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            Expiry Date/Time
+                        </label>
+                        {{ form.expires_at }}
+                        {% if form.expires_at.errors %}
+                        <span class="field-error">{{ form.expires_at.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" id="shorten-btn">
+                    <span class="btn-text">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                        Shorten URL
+                    </span>
+                    <span class="btn-loader hidden">
+                        <span class="spinner"></span>
+                        Shortening...
+                    </span>
+                </button>
+            </form>
+
+            <!-- Result Panel (shown after submission via JS) -->
+            <div class="result-panel hidden" id="result-panel">
+                <div class="result-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>Your link is ready!</span>
+                </div>
+                <div class="result-url-row">
+                    <a href="#" class="result-short-url" id="result-short-url" target="_blank"></a>
+                    <button class="btn-copy" id="copy-btn" onclick="copyShortUrl()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
+                <div class="result-actions">
+                    <a href="#" class="result-action-btn" id="view-analytics-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"/>
+                            <line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
+                        </svg>
+                        Analytics
+                    </a>
+                    <button class="result-action-btn" onclick="showQRCode()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                            <rect x="5" y="5" width="3" height="3"/><rect x="16" y="5" width="3" height="3"/>
+                            <rect x="16" y="16" width="3" height="3"/><rect x="5" y="16" width="3" height="3"/>
+                        </svg>
+                        QR Code
+                    </button>
+                    <button class="result-action-btn" onclick="shortenAnother()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                        Another
+                    </button>
+                </div>
+                <!-- QR Preview -->
+                <div class="qr-preview hidden" id="qr-preview">
+                    <img id="qr-image" src="" alt="QR Code">
+                    <a href="#" id="qr-download" class="btn-download-qr" download>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Download QR
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Decoration -->
+    <div class="hero-decoration">
+        <div class="floating-card card-1">
+            <div class="fc-icon">🔗</div>
+            <div class="fc-text">
+                <span class="fc-label">Links Shortened</span>
+                <span class="fc-value">{{ total_urls }}+</span>
+            </div>
+        </div>
+        <div class="floating-card card-2">
+            <div class="fc-icon">📊</div>
+            <div class="fc-text">
+                <span class="fc-label">Clicks Tracked</span>
+                <span class="fc-value">{{ total_clicks }}+</span>
+            </div>
+        </div>
+        <div class="floating-card card-3">
+            <div class="fc-icon">⚡</div>
+            <div class="fc-text">
+                <span class="fc-label">Response Time</span>
+                <span class="fc-value">&lt; 50ms</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+    <div class="section-container">
+        <h2 class="section-title">Everything you need</h2>
+        <p class="section-subtitle">Powerful features designed to boost your link management workflow</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </div>
+                <h3>Instant Shortening</h3>
+                <p>Transform any URL into a short, shareable link in milliseconds. No sign-up required.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                </div>
+                <h3>Real-time Analytics</h3>
+                <p>Track every click with detailed insights including device type, location, and referrer data.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                </div>
+                <h3>QR Code Generator</h3>
+                <p>Auto-generate high-quality QR codes for every short link. Download in PNG format instantly.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                </div>
+                <h3>Custom Aliases</h3>
+                <p>Create branded short links with custom slugs that reflect your identity or campaign.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </div>
+                <h3>Link Expiration</h3>
+                <p>Set expiration dates for time-sensitive campaigns. Expired links show a friendly message.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <h3>Link Management</h3>
+                <p>Activate, deactivate or delete links anytime. Full control over your short URL portfolio.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Links Section -->
+{% if recent_urls %}
+<section class="recent-section">
+    <div class="section-container">
+        <div class="section-header-row">
+            <h2 class="section-title-sm">Recent Links</h2>
+            <a href="{% url 'all_urls' %}" class="view-all-link">
+                View all
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"/>
+                </svg>
+            </a>
+        </div>
+        <div class="links-grid">
+            {% for url in recent_urls %}
+            <div class="link-card">
+                <div class="link-card-header">
+                    <div class="link-favicon">
+                        <img src="https://www.google.com/s2/favicons?domain={{ url.original_url }}&sz=32"
+                             alt="favicon" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%236C63FF%22><path d=%22M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71%22/%3E</svg>'">
+                    </div>
+                    <div class="link-meta">
+                        <span class="link-title">{{ url.title|default:url.original_url|truncatechars:35 }}</span>
+                        <span class="link-original">{{ url.original_url|truncatechars:40 }}</span>
+                    </div>
+                    <span class="status-badge {% if url.is_active %}active{% else %}inactive{% endif %}">
+                        {{ url.is_active|yesno:"Active,Inactive" }}
+                    </span>
+                </div>
+                <div class="link-card-body">
+                    <div class="link-short-row">
+                        <a href="/{{ url.get_short_identifier }}/" class="link-short" target="_blank">
+                            /{{ url.get_short_identifier }}
+                        </a>
+                        <button class="mini-copy-btn" onclick="copyText('{{ request.scheme }}://{{ request.get_host }}/{{ url.get_short_identifier }}/')" title="Copy">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="link-stats">
+                        <span class="link-stat">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            {{ url.click_count }} clicks
+                        </span>
+                        <span class="link-stat">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            {{ url.created_at|date:"M d" }}
+                        </span>
+                    </div>
+                </div>
+                <div class="link-card-footer">
+                    <a href="{% url 'url_detail' url.pk %}" class="link-action-btn">Analytics</a>
+                    <a href="{% url 'generate_qr' url.pk %}" class="link-action-btn">QR Code</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentUrlId = null;
+let currentShortUrl = null;
+
+document.getElementById('shorten-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('shorten-btn');
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoader = btn.querySelector('.btn-loader');
+
+    btnText.classList.add('hidden');
+    btnLoader.classList.remove('hidden');
+    btn.disabled = true;
+
+    const formData = new FormData(this);
+
+    try {
+        const response = await fetch('{% url "shorten_url" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            currentUrlId = data.id;
+            currentShortUrl = data.short_url;
+
+            // Show result panel
+            const resultPanel = document.getElementById('result-panel');
+            const shortUrlEl = document.getElementById('result-short-url');
+            shortUrlEl.href = data.short_url;
+            shortUrlEl.textContent = data.short_url;
+
+            document.getElementById('view-analytics-btn').href = `/links/${data.id}/`;
+            document.getElementById('qr-download').href = `/links/${data.id}/qr/`;
+
+            document.getElementById('shorten-form').classList.add('hidden');
+            resultPanel.classList.remove('hidden');
+
+            // Animate result in
+            resultPanel.style.opacity = '0';
+            resultPanel.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                resultPanel.style.transition = 'all 0.4s ease';
+                resultPanel.style.opacity = '1';
+                resultPanel.style.transform = 'translateY(0)';
+            }, 50);
+
+        } else {
+            // Show errors
+            showFormErrors(data.errors);
+        }
+    } catch(err) {
+        console.error(err);
+        alert('Something went wrong. Please try again.');
+    } finally {
+        btnText.classList.remove('hidden');
+        btnLoader.classList.add('hidden');
+        btn.disabled = false;
+    }
+});
+
+function showFormErrors(errors) {
+    // Clear existing errors
+    document.querySelectorAll('.field-error').forEach(el => el.remove());
+
+    for (const [field, messages] of Object.entries(errors)) {
+        const fieldId = field === 'original_url' ? 'original-url-input' :
+                       field === 'custom_alias' ? 'custom-alias-input' :
+                       field === 'title' ? 'title-input' : null;
+        if (fieldId) {
+            const input = document.getElementById(fieldId);
+            if (input) {
+                const errorEl = document.createElement('span');
+                errorEl.className = 'field-error';
+                errorEl.textContent = messages[0];
+                input.parentNode.appendChild(errorEl);
+                input.classList.add('input-error');
+            }
+        }
+    }
+}
+
+function toggleAdvanced() {
+    const panel = document.getElementById('advanced-panel');
+    const arrow = document.getElementById('toggle-arrow');
+    const isOpen = panel.classList.contains('open');
+    if (isOpen) {
+        panel.classList.remove('open');
+        arrow.style.transform = 'rotate(0deg)';
+    } else {
+        panel.classList.add('open');
+        arrow.style.transform = 'rotate(180deg)';
+    }
+}
+
+function copyShortUrl() {
+    if (currentShortUrl) {
+        copyText(currentShortUrl);
+        const btn = document.getElementById('copy-btn');
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+            btn.classList.remove('copied');
+        }, 2000);
+    }
+}
+
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard!');
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('Copied!');
+    });
+}
+
+function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
+
+async function showQRCode() {
+    if (!currentUrlId) return;
+    const qrPreview = document.getElementById('qr-preview');
+    const qrImage = document.getElementById('qr-image');
+
+    if (!qrPreview.classList.contains('hidden')) {
+        qrPreview.classList.add('hidden');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/links/${currentUrlId}/qr-preview/`);
+        const data = await response.json();
+        qrImage.src = data.qr_data;
+        qrPreview.classList.remove('hidden');
+    } catch(err) {
+        console.error('QR error:', err);
+    }
+}
+
+function shortenAnother() {
+    document.getElementById('result-panel').classList.add('hidden');
+    document.getElementById('qr-preview').classList.add('hidden');
+    document.getElementById('shorten-form').classList.remove('hidden');
+    document.getElementById('original-url-input').value = '';
+    document.getElementById('original-url-input').focus();
+    currentUrlId = null;
+    currentShortUrl = null;
+}
+
+// Auto-dismiss messages
+setTimeout(() => {
+    const msgs = document.querySelectorAll('.message');
+    msgs.forEach(m => { m.style.opacity = '0'; setTimeout(() => m.remove(), 300); });
+}, 4000);
+</script>
+{% endblock %}

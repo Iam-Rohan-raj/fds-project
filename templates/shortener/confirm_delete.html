@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Link — SnapLink{% endblock %}
+
+{% block content %}
+<div class="page-container narrow">
+    <div class="confirm-card">
+        <div class="confirm-icon danger">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6"/><path d="M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+        </div>
+        <h1 class="confirm-title">Delete this link?</h1>
+        <p class="confirm-desc">
+            This will permanently delete the short link
+            <strong class="highlight">/{{ url.get_short_identifier }}</strong>
+            and all its click history. This action cannot be undone.
+        </p>
+        <div class="confirm-url-preview">
+            <span class="confirm-label">Short URL</span>
+            <span class="confirm-value">/{{ url.get_short_identifier }}</span>
+        </div>
+        <div class="confirm-url-preview">
+            <span class="confirm-label">Original URL</span>
+            <span class="confirm-value muted">{{ url.original_url|truncatechars:60 }}</span>
+        </div>
+        <div class="confirm-url-preview">
+            <span class="confirm-label">Total Clicks</span>
+            <span class="confirm-value">{{ url.click_count }}</span>
+        </div>
+        <div class="confirm-actions">
+            <a href="{% url 'all_urls' %}" class="btn-cancel">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Cancel
+            </a>
+            <form method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn-confirm-delete">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    </svg>
+                    Yes, Delete it
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

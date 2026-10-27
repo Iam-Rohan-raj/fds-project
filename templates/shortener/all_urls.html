@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}My Links — SnapLink{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title">My Links</h1>
+        <p class="page-subtitle">Manage all your shortened URLs</p>
+    </div>
+
+    <!-- Search & Actions Bar -->
+    <div class="toolbar">
+        <form method="GET" class="search-form" id="search-form">
+            <div class="search-wrapper">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" name="q" id="search-input" class="search-input" placeholder="Search links, codes, URLs..." value="{{ query }}" autocomplete="off">
+                {% if query %}
+                <a href="{% url 'all_urls' %}" class="search-clear">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+        <a href="{% url 'home' %}" class="btn-primary-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Link
+        </a>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="mini-stats-row">
+        <span class="mini-stat">
+            <strong>{{ urls.count }}</strong> link{{ urls.count|pluralize }}
+            {% if query %} matching "{{ query }}"{% endif %}
+        </span>
+        <span class="mini-stat">
+            <strong>{{ total_clicks }}</strong> total clicks
+        </span>
+    </div>
+
+    <!-- Links Table -->
+    {% if urls %}
+    <div class="table-card">
+        <div class="table-wrapper">
+            <table class="data-table" id="links-table">
+                <thead>
+                    <tr>
+                        <th>Link</th>
+                        <th>Original URL</th>
+                        <th>Clicks</th>
+                        <th>Created</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for url in urls %}
+                    <tr class="table-row {% if not url.is_active %}row-inactive{% endif %}">
+                        <td>
+                            <div class="table-link-cell">
+                                <img src="https://www.google.com/s2/favicons?domain={{ url.original_url }}&sz=16"
+                                     alt="" class="table-favicon"
+                                     onerror="this.style.display='none'">
+                                <div>
+                                    <a href="/{{ url.get_short_identifier }}/" class="table-short-code" target="_blank">
+                                        /{{ url.get_short_identifier }}
+                                    </a>
+                                    {% if url.title %}
+                                    <span class="table-title">{{ url.title|truncatechars:30 }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{{ url.original_url }}" target="_blank" class="table-original" title="{{ url.original_url }}">
+                                {{ url.original_url|truncatechars:50 }}
+                            </a>
+                        </td>
+                        <td>
+                            <div class="click-cell">
+                                <span class="click-number">{{ url.click_count }}</span>
+                                {% if url.click_count > 0 %}
+                                <div class="click-bar" style="width: {% widthratio url.click_count total_clicks|default:1 60 %}px; max-width: 60px;"></div>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="date-cell">{{ url.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="status-badge {% if url.is_expired %}expired{% elif url.is_active %}active{% else %}inactive{% endif %}">
+                                {% if url.is_expired %}Expired{% elif url.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="icon-btn copy-btn" onclick="copyText('{{ request.scheme }}://{{ request.get_host }}/{{ url.get_short_identifier }}/')" title="Copy">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                    </svg>
+                                </button>
+                                <a href="{% url 'url_detail' url.pk %}" class="icon-btn analytics-btn" title="Analytics">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="20" x2="18" y2="10"/>
+                                        <line x1="12" y1="20" x2="12" y2="4"/>
+                                        <line x1="6" y1="20" x2="6" y2="14"/>
+                                    </svg>
+                                </a>
+                                <a href="{% url 'generate_qr' url.pk %}" class="icon-btn qr-btn" title="Download QR Code" download>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                                        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                                    </svg>
+                                </a>
+                                <a href="{% url 'toggle_url' url.pk %}" class="icon-btn toggle-btn" title="{% if url.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                    {% if url.is_active %}
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                                    </svg>
+                                    {% else %}
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    {% endif %}
+                                </a>
+                                <a href="{% url 'delete_url' url.pk %}" class="icon-btn delete-btn" title="Delete">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"/>
+                                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-page">
+        <div class="empty-icon">🔗</div>
+        <h2>{% if query %}No links found{% else %}No links yet{% endif %}</h2>
+        <p>{% if query %}Try a different search term.{% else %}Create your first short link to get started!{% endif %}</p>
+        {% if not query %}
+        <a href="{% url 'home' %}" class="btn-primary-sm">Create a Link</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Live search
+let searchTimer;
+document.getElementById('search-input').addEventListener('input', function() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+        document.getElementById('search-form').submit();
+    }, 400);
+});
+
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => showToast('Copied!')).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        showToast('Copied!');
+    });
+}
+function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'toast'; toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2000);
+}
+
+// Animate rows in
+document.querySelectorAll('.table-row').forEach((row, i) => {
+    row.style.opacity = '0';
+    row.style.transform = 'translateY(10px)';
+    setTimeout(() => {
+        row.style.transition = 'all 0.3s ease';
+        row.style.opacity = '1';
+        row.style.transform = 'translateY(0)';
+    }, i * 50);
+});
+</script>
+{% endblock %}

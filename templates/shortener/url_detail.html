@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ url.title|default:url.get_short_identifier }} — Analytics — SnapLink{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <a href="{% url 'all_urls' %}" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Back to Links
+        </a>
+        <div class="page-title-row">
+            <h1 class="page-title">
+                {{ url.title|default:"Link Analytics" }}
+            </h1>
+            <span class="status-badge large {% if url.is_active %}active{% else %}inactive{% endif %}">
+                {% if url.is_expired %}Expired{% elif url.is_active %}Active{% else %}Inactive{% endif %}
+            </span>
+        </div>
+        <p class="page-subtitle">
+            <a href="{{ url.original_url }}" target="_blank" class="original-url-link">
+                {{ url.original_url|truncatechars:80 }}
+            </a>
+        </p>
+    </div>
+
+    <!-- Short URL Card -->
+    <div class="detail-hero-card">
+        <div class="short-url-display">
+            <span class="short-url-label">Short URL</span>
+            <div class="short-url-row">
+                <a href="{{ short_url }}" class="short-url-value" target="_blank">{{ short_url }}</a>
+                <button class="btn-copy" onclick="copyText('{{ short_url }}')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    Copy
+                </button>
+                <a href="{% url 'generate_qr' url.pk %}" class="btn-secondary-sm" download>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    QR Code
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid-4">
+        <div class="stat-card">
+            <div class="stat-card-icon clicks">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            </div>
+            <div class="stat-card-body">
+                <span class="stat-card-value">{{ url.click_count }}</span>
+                <span class="stat-card-label">Total Clicks</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon created">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+            </div>
+            <div class="stat-card-body">
+                <span class="stat-card-value">{{ url.created_at|date:"M d, Y" }}</span>
+                <span class="stat-card-label">Created</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon alias">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+            </div>
+            <div class="stat-card-body">
+                <span class="stat-card-value">/{{ url.get_short_identifier }}</span>
+                <span class="stat-card-label">Short Code</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon expires">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            </div>
+            <div class="stat-card-body">
+                <span class="stat-card-value">{{ url.expires_at|date:"M d, Y"|default:"Never" }}</span>
+                <span class="stat-card-label">Expires</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <!-- Daily Clicks Chart -->
+        <div class="chart-card wide">
+            <div class="chart-card-header">
+                <h3>Clicks (Last 7 Days)</h3>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="dailyClicksChart"></canvas>
+                {% if not daily_clicks %}
+                <div class="chart-empty">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <p>No clicks yet. Share your link to start tracking!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Device Breakdown -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h3>Device Types</h3>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="deviceChart"></canvas>
+                {% if not device_stats %}
+                <div class="chart-empty">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                    <p>No device data yet.</p>
+                </div>
+                {% endif %}
+            </div>
+            {% if device_stats %}
+            <div class="device-legend">
+                {% for stat in device_stats %}
+                <div class="device-item">
+                    <span class="device-dot" style="background: {% if stat.device_type == 'Desktop' %}#6C63FF{% elif stat.device_type == 'Mobile' %}#10b981{% else %}#f59e0b{% endif %}"></span>
+                    <span class="device-name">{{ stat.device_type|default:"Unknown" }}</span>
+                    <span class="device-count">{{ stat.count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Clicks Table -->
+    <div class="table-card">
+        <div class="table-card-header">
+            <h3>Recent Clicks</h3>
+            <span class="table-count">{{ url.click_count }} total</span>
+        </div>
+        {% if recent_clicks %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Device</th>
+                        <th>IP Address</th>
+                        <th>Referer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for click in recent_clicks %}
+                    <tr>
+                        <td>{{ click.clicked_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <span class="device-badge {{ click.device_type|lower|default:'unknown' }}">
+                                {{ click.device_type|default:"Unknown" }}
+                            </span>
+                        </td>
+                        <td class="monospace">{{ click.ip_address|default:"—" }}</td>
+                        <td class="referer-cell">
+                            {% if click.referer %}
+                                <a href="{{ click.referer }}" target="_blank" title="{{ click.referer }}">
+                                    {{ click.referer|truncatechars:40 }}
+                                </a>
+                            {% else %}
+                                <span class="muted">Direct</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <p>No clicks recorded yet. Share your link!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="danger-zone-card">
+        <h3>Link Actions</h3>
+        <div class="danger-actions">
+            <a href="{% url 'toggle_url' url.pk %}" class="btn-toggle {% if url.is_active %}deactivate{% else %}activate{% endif %}">
+                {% if url.is_active %}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                </svg>
+                Deactivate Link
+                {% else %}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Activate Link
+                {% endif %}
+            </a>
+            <a href="{% url 'delete_url' url.pk %}" class="btn-delete">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+                Delete Link
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Daily Clicks Chart
+const dailyData = {{ daily_clicks|safe }};
+if (dailyData.length > 0) {
+    const ctx = document.getElementById('dailyClicksChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dailyData.map(d => d.date),
+            datasets: [{
+                label: 'Clicks',
+                data: dailyData.map(d => d.count),
+                borderColor: '#6C63FF',
+                backgroundColor: 'rgba(108, 99, 255, 0.1)',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#6C63FF',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                fill: true,
+                tension: 0.4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 15, 35, 0.9)',
+                    titleColor: '#a0aec0',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(108,99,255,0.3)',
+                    borderWidth: 1,
+                    padding: 12,
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#6b7280' }
+                },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#6b7280', stepSize: 1 },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Device Chart
+const deviceData = {{ device_stats|safe }};
+if (deviceData.length > 0) {
+    const ctx2 = document.getElementById('deviceChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: deviceData.map(d => d.device_type || 'Unknown'),
+            datasets: [{
+                data: deviceData.map(d => d.count),
+                backgroundColor: ['#6C63FF', '#10b981', '#f59e0b', '#ef4444'],
+                borderColor: 'rgba(15,15,35,0.8)',
+                borderWidth: 3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15,15,35,0.9)',
+                    titleColor: '#a0aec0',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(108,99,255,0.3)',
+                    borderWidth: 1,
+                    padding: 12,
+                }
+            }
+        }
+    });
+}
+
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard!');
+    });
+}
+function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2000);
+}
+</script>
+{% endblock %}

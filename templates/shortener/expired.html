@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Link Expired — SnapLink{% endblock %}
+
+{% block content %}
+<div class="page-container narrow">
+    <div class="confirm-card">
+        <div class="confirm-icon warning">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+        </div>
+        <h1 class="confirm-title">This link has expired</h1>
+        <p class="confirm-desc">
+            The short link <strong class="highlight">/{{ url.get_short_identifier }}</strong>
+            expired on {{ url.expires_at|date:"F d, Y \a\t H:i" }} and is no longer accessible.
+        </p>
+        <div class="confirm-actions" style="justify-content: center;">
+            <a href="{% url 'home' %}" class="btn-primary-sm">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                </svg>
+                Create a New Link
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
